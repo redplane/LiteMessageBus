@@ -8,6 +8,8 @@
     <Company>Freelance</Company>
     <Description>A small message bus wrapper library which helps developer to implement his/her own lite message bus.</Description>
     <PackageIconUrl>https://i.imgur.com/XnxFTRp.png</PackageIconUrl>
+    <PackageTags>Message bus, rx message, rx message bus, lite message bus, LiteMessageBus</PackageTags>
+    <RepositoryUrl></RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
