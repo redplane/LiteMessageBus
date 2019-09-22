@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\RxMessagebus\LiteMessageBus.csproj" />
+    <ProjectReference Include="..\LiteMessageBus\LiteMessageBus.csproj" />
   </ItemGroup>
 
 </Project>

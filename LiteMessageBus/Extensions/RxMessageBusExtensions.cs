@@ -15,7 +15,7 @@ namespace LiteMessageBus.Extensions
         /// <param name="services"></param>
         public static void AddInMemoryRxMessageBus(this IServiceCollection services)
         {
-            services.AddSingleton<IRxMessageBusService, InMemoryRxMessageBusService>();
+            services.AddSingleton<ILiteMessageBusService, InMemoryLiteMessageBusService>();
         }
 
         #endregion

@@ -3,7 +3,7 @@ using LiteMessageBus.Models;
 
 namespace LiteMessageBus.Services.Interfaces
 {
-    public interface IRxMessageBusService
+    public interface ILiteMessageBusService
     {
         #region Methods
 
@@ -23,15 +23,6 @@ namespace LiteMessageBus.Services.Interfaces
         /// <param name="eventName"></param>
         /// <returns></returns>
         IObservable<T> HookMessageChannel<T>(string channelName, string eventName);
-
-        /// <summary>
-        /// Raised when channel is added.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="channelName"></param>
-        /// <param name="eventName"></param>
-        /// <returns></returns>
-        IObservable<AddedChannelEvent> HookChannelInitialization(string channelName, string eventName);
 
         /// <summary>
         /// Add message to specific event in specific channel.

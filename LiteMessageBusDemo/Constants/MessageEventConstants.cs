@@ -1,4 +1,4 @@
-﻿namespace RxMessageBusDemo.Constants
+﻿namespace LiteMessageBusDemo.Constants
 {
     public class MessageEventConstants
     {

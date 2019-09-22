@@ -7,7 +7,7 @@ using LiteMessageBus.Services.Interfaces;
 
 namespace LiteMessageBus.Services.Implementations
 {
-    public class InMemoryRxMessageBusService : IRxMessageBusService
+    public class InMemoryLiteMessageBusService : ILiteMessageBusService
     {
         #region Properties
 
@@ -26,7 +26,7 @@ namespace LiteMessageBus.Services.Implementations
 
         #region Constructor
 
-        public InMemoryRxMessageBusService()
+        public InMemoryLiteMessageBusService()
         {
             _channelInitializationManager = new ConcurrentDictionary<MessageChannel, ReplaySubject<AddedChannelEvent>>();
             _channelManager = new ConcurrentDictionary<MessageChannel, ReplaySubject<MessageContainer<object>>>();
