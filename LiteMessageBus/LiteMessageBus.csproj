@@ -10,6 +10,7 @@
     <PackageIconUrl>https://i.imgur.com/XnxFTRp.png</PackageIconUrl>
     <PackageTags>Message bus, rx message, rx message bus, lite message bus, LiteMessageBus</PackageTags>
     <RepositoryUrl>https://github.com/redplane/LiteMessageBus</RepositoryUrl>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
