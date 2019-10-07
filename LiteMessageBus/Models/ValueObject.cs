@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace LiteMessageBus.Models
 {
-    internal abstract class ValueObject
+    public abstract class ValueObject
     {
         #region Methods
 

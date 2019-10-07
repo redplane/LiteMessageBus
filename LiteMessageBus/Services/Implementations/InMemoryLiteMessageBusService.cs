@@ -60,27 +60,12 @@ namespace LiteMessageBus.Services.Implementations
                 .Select(x =>
                 {
                     return LoadMessageChannel(channelName, eventName, false)
-                        .Where(messageContainer =>
-                            {
-                                return (messageContainer != null && messageContainer.Available &&
-                                        messageContainer.Data is T);
-                            })
+                        .Where(messageContainer => (messageContainer != null && messageContainer.Available &&
+                                                    messageContainer.Data is T))
                         .Select(messageContainer => (T)messageContainer.Data);
                 })
                 .Switch();
 
-        }
-
-        /// <summary>
-        /// <inheritdoc />
-        /// </summary>
-        /// <param name="channelName"></param>
-        /// <param name="eventName"></param>
-        /// <returns></returns>
-        public IObservable<AddedChannelEvent> HookChannelInitialization(string channelName, string eventName)
-        {
-            var channelInitializationEventEmitter = _channelInitializationManager.GetOrAdd(new MessageChannel(channelName, eventName), new ReplaySubject<AddedChannelEvent>());
-            return channelInitializationEventEmitter;
         }
 
         /// <summary>
@@ -131,12 +116,25 @@ namespace LiteMessageBus.Services.Implementations
         }
 
         /// <summary>
+        /// Hook to channel initialization.
+        /// </summary>
+        /// <param name="channelName"></param>
+        /// <param name="eventName"></param>
+        /// <returns></returns>
+        protected virtual IObservable<AddedChannelEvent> HookChannelInitialization(string channelName, string eventName)
+        {
+            var channelInitializationEventEmitter = _channelInitializationManager
+                .GetOrAdd(new MessageChannel(channelName, eventName), new ReplaySubject<AddedChannelEvent>());
+            return channelInitializationEventEmitter;
+        }
+        
+        /// <summary>
         /// Load message channel using channel name and event name.
         /// Specifying auto create will trigger channel creation if it is not available.
         /// Auto create option can cause concurrent issue, such as parent channel can be replaced by child component.
         /// Therefore, it should be used wisely.
         /// </summary>
-        protected internal ReplaySubject<MessageContainer<object>> LoadMessageChannel(string channelName, string eventName, bool autoCreate = false)
+        private ReplaySubject<MessageContainer<object>> LoadMessageChannel(string channelName, string eventName, bool autoCreate = false)
         {
             var hasMessageEmitterAdded = false;
             if (!_channelManager.TryGetValue(new MessageChannel(channelName, eventName), out var channelEventEmitter))
