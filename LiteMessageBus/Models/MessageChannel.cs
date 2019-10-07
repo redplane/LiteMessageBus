@@ -3,16 +3,16 @@ using System.Collections.Generic;
 
 namespace LiteMessageBus.Models
 {
-    internal class MessageChannel : ValueObject
+    public class MessageChannel : ValueObject
     {
         #region Properties
 
         /// <summary>
         /// Name of channel.
-        /// </summary>
+        /// </summary>public
         public string Name { get; }
 
-        /// <summary>
+        /// <summary>public
         /// Name of event.
         /// </summary>
         public string EventName { get; }
@@ -43,7 +43,6 @@ namespace LiteMessageBus.Models
             yield return Name;
             yield return EventName;
         }
-
 
         #endregion
     }

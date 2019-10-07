@@ -136,23 +136,19 @@ namespace LiteMessageBus.Services.Implementations
         /// </summary>
         private ReplaySubject<MessageContainer<object>> LoadMessageChannel(string channelName, string eventName, bool autoCreate = false)
         {
-            var hasMessageEmitterAdded = false;
-            if (!_channelManager.TryGetValue(new MessageChannel(channelName, eventName), out var channelEventEmitter))
-            {
-                if (!autoCreate)
-                    return null;
-
-                channelEventEmitter = new ReplaySubject<MessageContainer<object>>(1);
-                if (!_channelManager.TryAdd(new MessageChannel(channelName, eventName), channelEventEmitter))
-                    throw new Exception($"Cannot add channel {channelName} and event name {eventName}");
-
-                hasMessageEmitterAdded = true;
-            }
-
-            // Channel has been added before.
-            if (!hasMessageEmitterAdded)
-                return channelEventEmitter;
-
+            // Channel hasn't been created before.
+            if (_channelManager.TryGetValue(new MessageChannel(channelName, eventName), out var channelMessageEmitter))
+                return channelMessageEmitter;
+            
+            // Whether channel should be created automatically.
+            if (!autoCreate)
+                return null;
+            
+            // Create the channel message emitter.
+            channelMessageEmitter = new ReplaySubject<MessageContainer<object>>(1);
+            if (!_channelManager.TryAdd(new MessageChannel(channelName, eventName), channelMessageEmitter))
+                throw new Exception($"Cannot add channel {channelName} and event name {eventName}");
+            
             // Raise an event about message channel creation if it has been newly added.
             if (!_channelInitializationManager.TryGetValue(new MessageChannel(channelName, eventName),
                 out var channelInitializationEventEmitter))
@@ -162,9 +158,8 @@ namespace LiteMessageBus.Services.Implementations
             }
 
             channelInitializationEventEmitter.OnNext(new AddedChannelEvent(channelName, eventName));
-            return channelEventEmitter;
+            return channelMessageEmitter;
         }
-
 
         #endregion
     }
