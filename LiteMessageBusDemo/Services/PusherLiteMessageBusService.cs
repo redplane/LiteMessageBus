@@ -8,6 +8,8 @@ using LiteMessageBus.Models;
 using LiteMessageBus.Services.Implementations;
 using LiteMessageBus.Services.Interfaces;
 using LiteMessageBusDemo.Models;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using PusherServer;
 using ServiceStack;
 
@@ -26,7 +28,7 @@ namespace LiteMessageBusDemo.Services
         /// <summary>
         /// Chanel event manager.
         /// </summary>
-        private readonly ConcurrentDictionary<MessageChannel, MessageChannelOption>
+        private readonly ConcurrentDictionary<MessageChannel, PusherMessageChannelOption>
             _channelManager;
 
         /// <summary>
@@ -43,7 +45,7 @@ namespace LiteMessageBusDemo.Services
 
         public PusherLiteMessageBusService(Pusher broadcaster, PusherClient.Pusher recipient)
         {
-            _channelManager = new ConcurrentDictionary<MessageChannel, MessageChannelOption>();
+            _channelManager = new ConcurrentDictionary<MessageChannel, PusherMessageChannelOption>();
             _channelInitializationManager =
                 new ConcurrentDictionary<MessageChannel, ReplaySubject<AddedChannelEvent>>();
             _broadcaster = broadcaster;
@@ -76,16 +78,28 @@ namespace LiteMessageBusDemo.Services
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
         /// <exception cref="NotImplementedException"></exception>
-        public IObservable<T> HookMessageChannel<T>(string channelName, string eventName)
+        public virtual IObservable<T> HookMessageChannel<T>(string channelName, string eventName)
         {
             return HookChannelInitialization(channelName, eventName)
                 .Select(x =>
                 {
                     return LoadMessageChannel(channelName, eventName, false)
-                        ?.InnerMessageSender
-                        .Where(messageContainer => (messageContainer != null && messageContainer.Available &&
-                                                    messageContainer.Data is T))
-                        .Select(messageContainer => (T) messageContainer.Data);
+                        ?.InternalBroadcaster
+                        .Where(messageContainer => (messageContainer != null && messageContainer.Available))
+                        .Select(messageContainer =>
+                        {
+                            var root = messageContainer.Data;
+                            
+                            // Root is json object.
+                            if (root is JObject jObject)
+                                return jObject.ToObject<T>();
+
+                            // Root is already in type of T.
+                            if (root is T data)
+                                return data;
+
+                            return default(T);
+                        });
                 })
                 .Switch();
         }
@@ -98,11 +112,10 @@ namespace LiteMessageBusDemo.Services
         /// <param name="data"></param>
         /// <typeparam name="T"></typeparam>
         /// <exception cref="NotImplementedException"></exception>
-        public void AddMessage<T>(string channelName, string eventName, T data)
+        public virtual void AddMessage<T>(string channelName, string eventName, T data)
         {
-            var messageContainer = new MessageContainer<T>(data, true);
-            _broadcaster.TriggerAsync(channelName, eventName, messageContainer)
-                .Wait();
+            var channelMessageEmitter = LoadMessageChannel(channelName, eventName, true);
+            channelMessageEmitter?.SendExternalMessage<T>(data); 
         }
 
         /// <summary>
@@ -111,22 +124,21 @@ namespace LiteMessageBusDemo.Services
         /// <param name="channelName"></param>
         /// <param name="eventName"></param>
         /// <exception cref="NotImplementedException"></exception>
-        public void DeleteMessage(string channelName, string eventName)
+        public virtual void DeleteMessage(string channelName, string eventName)
         {
-            var messageContainer = new MessageContainer<object>(null, false);
-            _broadcaster.TriggerAsync(channelName, eventName, messageContainer)
-                .Wait();
+            var channelMessageEmitter = LoadMessageChannel(channelName, eventName, false);
+            channelMessageEmitter?.DeleteMessage();
         }
 
         /// <summary>
         /// Delete message from every channel in pusher server.
         /// </summary>
         /// <exception cref="NotImplementedException"></exception>
-        public void DeleteMessages()
+        public virtual void DeleteMessages()
         {
             var keys = _channelManager.Keys;
             var broadCastedEvents = new LinkedList<Event>();
-            var channelMessageEmitters = new LinkedList<MessageChannelOption>();
+            var channelMessageEmitters = new LinkedList<PusherMessageChannelOption>();
 
             foreach (var key in keys)
             {
@@ -151,7 +163,7 @@ namespace LiteMessageBusDemo.Services
 
             // Clear the local channel.
             foreach (var channelMessageEmitter in channelMessageEmitters)
-                channelMessageEmitter?.InnerMessageSender?.OnNext(new MessageContainer<object>(null, false));
+                channelMessageEmitter?.DeleteMessage();
         }
 
         #endregion
@@ -177,11 +189,11 @@ namespace LiteMessageBusDemo.Services
         /// Auto create option can cause concurrent issue, such as parent channel can be replaced by child component.
         /// Therefore, it should be used wisely.
         /// </summary>
-        private MessageChannelOption LoadMessageChannel(string channelName, string eventName, bool autoCreate = false)
+        protected virtual PusherMessageChannelOption LoadMessageChannel(string channelName, string eventName, bool autoCreate = false)
         {
             // Initialize a message channel key.
             var messageChannel = new MessageChannel(channelName, eventName);
-            
+
             // Message channel has been added before.
             if (_channelManager.TryGetValue(messageChannel, out var messageChannelOption))
                 return messageChannelOption;
@@ -200,23 +212,18 @@ namespace LiteMessageBusDemo.Services
                 return null;
 
             // Initialize pusher channel subscription.
-            var channelSubscription = _recipient.SubscribeAsync(channelName)
+            var recipientChannel = _recipient.SubscribeAsync(channelName)
                 .Result;
 
             // Initialize message channel option.
             messageChannelOption =
-                new MessageChannelOption(new ReplaySubject<MessageContainer<object>>(), channelSubscription);
+                new PusherMessageChannelOption(eventName, recipientChannel, _broadcaster);
 
             // Fail to add new message channel.
             if (!_channelManager.TryAdd(messageChannel, messageChannelOption))
                 return null;
-            
-            channelSubscription.Bind(eventName, messageContainer =>
-            {
-                messageChannelOption.InnerMessageSender
-                    .OnNext(messageContainer);
-            });
-            
+
+
             channelInitializationEventEmitter.OnNext(new AddedChannelEvent(channelName, eventName));
             return messageChannelOption;
         }
