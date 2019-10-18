@@ -13,15 +13,15 @@
     3.1: `ILiteMessageBusService`:
 
     - By default  `ILiteMessageBusService` is provided with some methods:
-        - `void AddMessageChannel<T>(string channelName, string eventName)`: To add a message channel into message bus manager instance.
+        - **void AddMessageChannel<T>(string channelName, string eventName)**: To add a message channel into message bus manager instance.
     
-        - `IObservable<T> HookMessageChannel<T>(string channelName, string eventName)`: To catch to a message channel to listen to messages that are broadcasted through the channel with specific event names.
+        - **IObservable<T> HookMessageChannel<T>(string channelName, string eventName)**: To catch to a message channel to listen to messages that are broadcasted through the channel with specific event names.
     
-        - `void AddMessage<T>(string channelName, string eventName, T data);`: Broadcast a message into a channel - event pair.
+        - **void AddMessage<T>(string channelName, string eventName, T data)**: Broadcast a message into a channel - event pair.
     
-        - `void DeleteMessage(string channelName, string eventName);`: Delete a message from a specific channel and event.
+        - **void DeleteMessage(string channelName, string eventName)**: Delete a message from a specific channel and event.
         
-        - `void DeleteMessages();`: Delete messages from all channels and events.
+        - **void DeleteMessages()**: Delete messages from all channels and events.
     
     3.2: `RxMessageBusExtensions`:
     - The extension to helps developer to register an **In-memory message bus** service into **ASP.Net Core** system.
