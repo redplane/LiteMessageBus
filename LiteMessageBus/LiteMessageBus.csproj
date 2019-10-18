@@ -11,6 +11,8 @@
     <PackageTags>Message bus, rx message, rx message bus, lite message bus, LiteMessageBus</PackageTags>
     <RepositoryUrl>https://github.com/redplane/LiteMessageBus</RepositoryUrl>
     <LangVersion>latest</LangVersion>
+    <Copyright>MIT</Copyright>
+    <PackageProjectUrl>https://github.com/redplane/LiteMessageBus</PackageProjectUrl>
   </PropertyGroup>
 
   <ItemGroup>
