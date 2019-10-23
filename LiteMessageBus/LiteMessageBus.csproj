@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <PackageId>LiteMessageBus</PackageId>
-    <Version>1.0.0-Preview-1</Version>
+    <Version>1.0.0-Preview-2</Version>
     <Authors>Linh Nguyen</Authors>
     <Company>Freelance</Company>
     <Description>A small message bus wrapper library which helps developer to implement his/her own lite message bus.</Description>
