@@ -7,6 +7,7 @@ using LiteMessageBus.Services.Interfaces;
 
 namespace LiteMessageBus.Services.Implementations
 {
+    [Obsolete("This class will be removed in the next version. Please use ")]
     public class InMemoryLiteMessageBusService : ILiteMessageBusService
     {
         #region Properties

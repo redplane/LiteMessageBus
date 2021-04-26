@@ -12,8 +12,10 @@ namespace LiteMessageBusDemo
             var inMemoryMessageBus = new InMemoryLiteMessageBusService();
             inMemoryMessageBus.HookMessageChannel<string>(MessageChannelConstants.Ui, MessageEventConstants.SendMessage)
                 .Subscribe(message =>
+                {
                     Console.WriteLine(
-                        $"[IN-MEMORY] {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} - Message received: {message}"));
+                        $"[IN-MEMORY] {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} - Message received: {message}");
+                });
 
             //const string appId = "875585";
             //const string appKey = "7924946bbbd2fc014135";

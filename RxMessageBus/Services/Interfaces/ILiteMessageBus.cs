@@ -3,6 +3,7 @@ using LiteMessageBus.Models;
 
 namespace LiteMessageBus.Services.Interfaces
 {
+    [Obsolete("This will be removed in the next version, please use IRxMessageBusService instead.")]
     public interface ILiteMessageBusService
     {
         #region Methods

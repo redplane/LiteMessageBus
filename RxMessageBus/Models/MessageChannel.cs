@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace LiteMessageBus.Models
 {
-    public class MessageChannel : ValueObject
+    public class MessageChannel
     {
         #region Properties
 
@@ -32,16 +32,6 @@ namespace LiteMessageBus.Models
 
             Name = name.ToLower().Trim();
             EventName = eventName.ToLower().Trim();
-        }
-
-        #endregion
-
-        #region Methods
-
-        protected override IEnumerable<object> GetAtomicValues()
-        {
-            yield return Name;
-            yield return EventName;
         }
 
         #endregion
