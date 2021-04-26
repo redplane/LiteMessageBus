@@ -3,25 +3,27 @@ version: 1.0.{build}-{branch}
 
 # branches to build
 branches:
-    # whitelist
-    only:
-        - master
-        - feature
+  # whitelist
+  only:
+    - master
+    - /feature\//
+    - /fix\//
+    - preview
 
 # Including commits affecting specific files (GitHub only). More details here: /docs/appveyor-yml
 only_commits:
-    files:
-        - LiteMessageBus/
-        - LiteMessageBus.UnitTest/
+  files:
+    - RxMessageBus/
+    - RxMessageBus.UnitTest/
 
 # Skipping commits affecting specific files (GitHub only). More details here: /docs/appveyor-yml
 skip_commits:
-    files:
-        - '**/bin/*'
-        - '**/obj/*'
+  files:
+    - '**/bin/*'
+    - '**/obj/*'
 
 # Do not build feature branch with open Pull Requests
-skip_branch_with_pr: true
+skip_branch_with_pr: false
 
 #---------------------------------#
 #    environment configuration    #
@@ -32,12 +34,16 @@ image: Visual Studio 2019
 
 # environment variables
 environment:
-    global:
-        MY_GET_API_KEY:
-            secure: 0HqMlO4KT03m1Obda0ta46zbO1EgtiSouotet2O7J7QU5SMEJfrv+GgM0cuNPL9l
+  global:
 
-        NUGET_API_KEY:
-            secure: 6KCShanM7o7Nyq9f85Efr2161/99q2f0xwPEQFMHyXv8OhcqDV85PdCgLV7fWkAq
+    MY_GET_API_KEY:
+      secure: 0HqMlO4KT03m1Obda0ta46zbO1EgtiSouotet2O7J7QU5SMEJfrv+GgM0cuNPL9l
+
+    NUGET_API_KEY:
+      secure: 6KCShanM7o7Nyq9f85Efr2161/99q2f0xwPEQFMHyXv8OhcqDV85PdCgLV7fWkAq
+
+    GITHUB_AUTH_TOKEN:
+      secure: BhxepsmskWkuO8g8qIGkTufBrqARrrCamxsmxHaTg1go1J5lJgsvhsywWIF0WUmo
 
 # build cache to preserve files/folders between builds
 cache:
@@ -47,19 +53,19 @@ cache:
 
 # scripts that run after cloning repository
 install:
-    # Restore solution packages.
-    - dotnet restore LiteMessageBus.sln
+  # Restore solution packages.
+  - dotnet restore RxMessageBus.sln
 
 # to run your custom scripts instead of automatic MSBuild
 build_script:
-    # Build library with debug mode.
-    - dotnet pack LiteMessageBus\LiteMessageBus.csproj -c Debug
+  # Build library with debug mode.
+  - dotnet pack RxMessageBus\RxMessagebus.csproj -c Debug
 
 # scripts to run after build (working directory and environment changes are persisted from the previous steps)
-after_build:
+#after_build:
 
 # scripts to run *after* solution is built and *before* automatic packaging occurs (web apps, NuGet packages, Azure Cloud Services)
-before_package:
+#before_package: 
 
 # to disable automatic builds
 #build: off
@@ -81,18 +87,18 @@ before_package:
 #test: off
 
 nuget:
-    account_feed: true
-    project_feed: true
-    disable_publish_on_pr: true     # disable publishing of .nupkg artifacts to account/project feeds for pull request builds
+  account_feed: true
+  project_feed: true
+  disable_publish_on_pr: true     # disable publishing of .nupkg artifacts to account/project feeds for pull request builds
 
 
 #---------------------------------#
 #      artifacts configuration    #
 #---------------------------------#
 artifacts:
-    # pushing all *.nupkg files in build directory recursively
-    -   path: '**\LiteMessageBus.*.nupkg'
-        name: Nuget package
+  # pushing all *.nupkg files in build directory recursively
+  - path: '**\LiteMessageBus.*.nupkg'
+    name: Nuget package
 
 #---------------------------------#
 #     deployment configuration    #
@@ -102,31 +108,58 @@ artifacts:
 # provider names are case-sensitive!
 deploy:
 
-    # MyGet deployment (feature).
-    -   provider: NuGet
-        server: https://www.myget.org/F/lite-message-bus
-        api_key: $(MY_GET_API_KEY)
-        skip_symbols: true
-        artifact: Nuget package
-        on:
-            branch: feature
+  # MyGet deployment (preview).
+  - provider: NuGet
+    server: https://www.myget.org/F/lite-message-bus
+    api_key: $(MY_GET_API_KEY)
+    skip_symbols: true
+    artifact: Nuget package
+    on:
+      branch: preview
+      APPVEYOR_REPO_TAG: true
 
-    # Nuget deployment (master).
-    -   provider: NuGet
-        api_key: $(NUGET_API_KEY)
-        skip_symbols: true
-        artifact: Nuget package
-        on:
-            branch: master
+  # Github release (preview)   
+  - provider: Github
+    tag: ${APPVEYOR_REPO_TAG_NAME}
+    description: ${APPVEYOR_REPO_COMMIT_MESSAGE}
+    auth_token: ${GITHUB_AUTH_TOKEN}
+    artifact: Nuget package
+    draft: true
+    prerelease: true
+    on:
+      branch: preview
+      APPVEYOR_REPO_TAG: true
+
+  # Nuget deployment (master).
+  - provider: NuGet
+    api_key: $(NUGET_API_KEY)
+    skip_symbols: true
+    artifact: Nuget package
+    on:
+      branch: master
+      APPVEYOR_REPO_TAG: true
+
+  # Github release (master)
+  - provider: Github
+    tag: ${APPVEYOR_REPO_TAG_NAME}
+    description: ${APPVEYOR_REPO_COMMIT_MESSAGE}
+    auth_token: ${GITHUB_AUTH_TOKEN}
+    artifact: Nuget package
+    draft: false
+    prerelease: false
+    on:
+      branch: master
+      APPVEYOR_REPO_TAG: true
+
 
 # scripts to run before deployment
-before_deploy:
+#before_deploy: 
 
 # scripts to run after deployment
-after_deploy:
+#after_deploy:
 
 # to run your custom scripts instead of provider deployments
-deploy_script:
+#deploy_script:
 
 # to disable deployment
 #deploy: off
@@ -141,7 +174,8 @@ notifications:
   - provider: Email
     to:
       - lightalakanzam@gmail.com
-    subject: '[LiteMessageBus] Build {{status}}' 
+      - redplane_dt@yahoo.com.vn
+    subject: '[RxMessageBus] Build {{status}}'
     message: "{{message}}, {{commitId}}, ..."
     on_build_status_changed: true
 
