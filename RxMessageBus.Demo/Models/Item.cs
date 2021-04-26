@@ -1,4 +1,4 @@
-namespace LiteMessageBusDemo.Models
+namespace RxMessageBus.Demo.Models
 {
     public class Item
     {

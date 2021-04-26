@@ -1,8 +1,8 @@
 using System;
-using System.Reactive.Linq;
 using LiteMessageBus.Services.Implementations;
 using NUnit.Framework;
-namespace LiteMessageBus.UnitTest.Services
+
+namespace RxMessageBus.UnitTest.Services
 {
     [TestFixture]
     public class InMemoryLiteMessageBusServiceTests

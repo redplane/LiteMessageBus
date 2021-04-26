@@ -2,166 +2,224 @@
 using System.Collections.Concurrent;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using LiteMessageBus.Exceptions;
 using LiteMessageBus.Models;
 using LiteMessageBus.Services.Interfaces;
 
 namespace LiteMessageBus.Services.Implementations
 {
-    [Obsolete("This class will be removed in the next version. Please use ")]
-    public class InMemoryLiteMessageBusService : ILiteMessageBusService
-    {
-        #region Properties
+	[Obsolete("This class will be removed in the next version. Please use ")]
+	public class InMemoryLiteMessageBusService : ILiteMessageBusService
+	{
+		#region Constructor
 
-        /// <summary>
-        /// Chanel event manager.
-        /// </summary>
-        private readonly ConcurrentDictionary<MessageChannel, ReplaySubject<MessageContainer<object>>>
-            _channelManager;
+		public InMemoryLiteMessageBusService()
+		{
+			_channelInitializationManager =
+				new ConcurrentDictionary<MessageChannel, ReplaySubject<AddedChannelEvent>>();
+			_channelManager = new ConcurrentDictionary<MessageChannel, ReplaySubject<MessageContainer<object>>>();
+		}
 
-        /// <summary>
-        /// Channel initialization manager.
-        /// </summary>
-        private readonly ConcurrentDictionary<MessageChannel, ReplaySubject<AddedChannelEvent>> _channelInitializationManager;
+		#endregion
 
-        #endregion
+		#region Properties
 
-        #region Constructor
+		/// <summary>
+		///     Chanel event manager.
+		/// </summary>
+		private readonly ConcurrentDictionary<MessageChannel, ReplaySubject<MessageContainer<object>>>
+			_channelManager;
 
-        public InMemoryLiteMessageBusService()
-        {
-            _channelInitializationManager = new ConcurrentDictionary<MessageChannel, ReplaySubject<AddedChannelEvent>>();
-            _channelManager = new ConcurrentDictionary<MessageChannel, ReplaySubject<MessageContainer<object>>>();
-        }
+		/// <summary>
+		///     Channel initialization manager.
+		/// </summary>
+		private readonly ConcurrentDictionary<MessageChannel, ReplaySubject<AddedChannelEvent>>
+			_channelInitializationManager;
 
-        #endregion
+		#endregion
 
-        #region Methods
+		#region Methods
 
-        /// <summary>
-        /// <inheritdoc />
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="channelName"></param>
-        /// <param name="eventName"></param>
-        public void AddMessageChannel<T>(string channelName, string eventName)
-        {
-            LoadMessageChannel(channelName, eventName, true);;
-        }
+		/// <summary>
+		///     <inheritdoc />
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="channelName"></param>
+		/// <param name="eventName"></param>
+		public virtual void AddMessageChannel<T>(string channelName, string eventName)
+		{
+			LoadMessageChannel(channelName, eventName, true);
+		}
 
-        /// <summary>
-        /// <inheritdoc />
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="channelName"></param>
-        /// <param name="eventName"></param>
-        /// <returns></returns>
-        public IObservable<T> HookMessageChannel<T>(string channelName, string eventName)
-        {
-            return HookChannelInitialization(channelName, eventName)
-                .Select(x =>
-                {
-                    return LoadMessageChannel(channelName, eventName, false)
-                        .Where(messageContainer => (messageContainer != null && messageContainer.Available &&
-                                                    messageContainer.Data is T))
-                        .Select(messageContainer => (T)messageContainer.Data);
-                })
-                .Switch();
+		/// <summary>
+		///     <inheritdoc />
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="channelEvent"></param>
+		public virtual void AddTypedMessageChannel<T>(TypedChannelEvent<T> channelEvent)
+		{
+			if (channelEvent == null)
+				throw new InvalidTypedMessageChannelException();
 
-        }
+			LoadMessageChannel(channelEvent.ChannelName, channelEvent.EventName, true);
+		}
 
-        /// <summary>
-        /// <inheritdoc />
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="channelName"></param>
-        /// <param name="eventName"></param>
-        /// <param name="data"></param>
-        public void AddMessage<T>(string channelName, string eventName, T data)
-        {
-            var messageContainer = new MessageContainer<object>(data, true);
-            var channelMessageEmitter = LoadMessageChannel(channelName, eventName, true);
-            if (channelMessageEmitter == null)
-                return;
+		/// <summary>
+		///     <inheritdoc />
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="channelName"></param>
+		/// <param name="eventName"></param>
+		/// <returns></returns>
+		public virtual IObservable<T> HookMessageChannel<T>(string channelName, string eventName)
+		{
+			return HookChannelInitialization(channelName, eventName)
+				.Select(x =>
+				{
+					return LoadMessageChannel(channelName, eventName)
+						.Where(messageContainer => messageContainer != null && messageContainer.Available &&
+						                           messageContainer.Data is T)
+						.Select(messageContainer => (T) messageContainer.Data);
+				})
+				.Switch();
+		}
 
-            channelMessageEmitter.OnNext(messageContainer);
-        }
+		/// <summary>
+		///     <inheritdoc />
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="channelEvent"></param>
+		/// <returns></returns>
+		public virtual IObservable<T> HookTypedMessageChannel<T>(TypedChannelEvent<T> channelEvent)
+		{
+			if (channelEvent == null)
+				throw new InvalidTypedMessageChannelException();
 
-        /// <summary>
-        /// <inheritdoc />
-        /// </summary>
-        /// <param name="channelName"></param>
-        /// <param name="eventName"></param>
-        public void DeleteMessage(string channelName, string eventName)
-        {
-            var messageContainer = new MessageContainer<object>(null, false);
-            var channelMessageEmitter = LoadMessageChannel(channelName, eventName, true);
+			return HookMessageChannel<T>(channelEvent.ChannelName, channelEvent.EventName);
+		}
 
-            // Emit the blank message to channel.
-            channelMessageEmitter.OnNext(messageContainer);
-        }
+		/// <summary>
+		///     <inheritdoc />
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="channelName"></param>
+		/// <param name="eventName"></param>
+		/// <param name="data"></param>
+		public virtual void AddMessage<T>(string channelName, string eventName, T data)
+		{
+			var messageContainer = new MessageContainer<object>(data, true);
+			var channelMessageEmitter = LoadMessageChannel(channelName, eventName, true);
+			if (channelMessageEmitter == null)
+				return;
 
-        /// <summary>
-        /// <inheritdoc />
-        /// </summary>
-        public void DeleteMessages()
-        {
-            var keys = _channelManager.Keys;
-            foreach (var key in keys)
-            {
-                if (!_channelManager.TryGetValue(key, out var channelMessageEmitter))
-                    continue;
+			channelMessageEmitter.OnNext(messageContainer);
+		}
 
-                var messageContainer = new MessageContainer<object>(null, false);
-                channelMessageEmitter.OnNext(messageContainer);
-            }
-        }
+		/// <summary>
+		/// <inheritdoc />
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="channelEvent"></param>
+		/// <param name="data"></param>
+		public virtual void AddTypedMessage<T>(TypedChannelEvent<T> channelEvent, T data)
+		{
+			if (channelEvent == null)
+				throw new InvalidTypedMessageChannelException();
 
-        /// <summary>
-        /// Hook to channel initialization.
-        /// </summary>
-        /// <param name="channelName"></param>
-        /// <param name="eventName"></param>
-        /// <returns></returns>
-        protected virtual IObservable<AddedChannelEvent> HookChannelInitialization(string channelName, string eventName)
-        {
-            var channelInitializationEventEmitter = _channelInitializationManager
-                .GetOrAdd(new MessageChannel(channelName, eventName), new ReplaySubject<AddedChannelEvent>());
-            return channelInitializationEventEmitter;
-        }
-        
-        /// <summary>
-        /// Load message channel using channel name and event name.
-        /// Specifying auto create will trigger channel creation if it is not available.
-        /// Auto create option can cause concurrent issue, such as parent channel can be replaced by child component.
-        /// Therefore, it should be used wisely.
-        /// </summary>
-        private ReplaySubject<MessageContainer<object>> LoadMessageChannel(string channelName, string eventName, bool autoCreate = false)
-        {
-            // Channel hasn't been created before.
-            if (_channelManager.TryGetValue(new MessageChannel(channelName, eventName), out var channelMessageEmitter))
-                return channelMessageEmitter;
-            
-            // Whether channel should be created automatically.
-            if (!autoCreate)
-                return null;
-            
-            // Create the channel message emitter.
-            channelMessageEmitter = new ReplaySubject<MessageContainer<object>>(1);
-            if (!_channelManager.TryAdd(new MessageChannel(channelName, eventName), channelMessageEmitter))
-                throw new Exception($"Cannot add channel {channelName} and event name {eventName}");
-            
-            // Raise an event about message channel creation if it has been newly added.
-            if (!_channelInitializationManager.TryGetValue(new MessageChannel(channelName, eventName),
-                out var channelInitializationEventEmitter))
-            {
-                channelInitializationEventEmitter = new ReplaySubject<AddedChannelEvent>(1);
-                _channelInitializationManager.TryAdd(new MessageChannel(channelName, eventName), channelInitializationEventEmitter);
-            }
+			AddMessage(channelEvent.ChannelName, channelEvent.EventName, data);
+		}
 
-            channelInitializationEventEmitter.OnNext(new AddedChannelEvent(channelName, eventName));
-            return channelMessageEmitter;
-        }
+		/// <summary>
+		///     <inheritdoc />
+		/// </summary>
+		/// <param name="channelName"></param>
+		/// <param name="eventName"></param>
+		public virtual void DeleteMessage(string channelName, string eventName)
+		{
+			var messageContainer = new MessageContainer<object>(null, false);
+			var channelMessageEmitter = LoadMessageChannel(channelName, eventName, true);
 
-        #endregion
-    }
+			// Emit the blank message to channel.
+			channelMessageEmitter.OnNext(messageContainer);
+		}
+
+		/// <summary>
+		/// <inheritdoc />
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="channelEvent"></param>
+		public void DeleteTypedMessage<T>(TypedChannelEvent<T> channelEvent)
+		{
+			if (channelEvent == null)
+				throw new InvalidTypedMessageChannelException();
+
+			DeleteMessage(channelEvent.ChannelName, channelEvent.EventName);
+		}
+
+		/// <summary>
+		///     <inheritdoc />
+		/// </summary>
+		public virtual void DeleteMessages()
+		{
+			var keys = _channelManager.Keys;
+			foreach (var key in keys)
+			{
+				if (!_channelManager.TryGetValue(key, out var channelMessageEmitter))
+					continue;
+
+				var messageContainer = new MessageContainer<object>(null, false);
+				channelMessageEmitter.OnNext(messageContainer);
+			}
+		}
+
+		/// <summary>
+		///     Hook to channel initialization.
+		/// </summary>
+		/// <param name="channelName"></param>
+		/// <param name="eventName"></param>
+		/// <returns></returns>
+		protected virtual IObservable<AddedChannelEvent> HookChannelInitialization(string channelName, string eventName)
+		{
+			var channelInitializationEventEmitter = _channelInitializationManager
+				.GetOrAdd(new MessageChannel(channelName, eventName), new ReplaySubject<AddedChannelEvent>());
+			return channelInitializationEventEmitter;
+		}
+
+		/// <summary>
+		///     Load message channel using channel name and event name.
+		///     Specifying auto create will trigger channel creation if it is not available.
+		///     Auto create option can cause concurrent issue, such as parent channel can be replaced by child component.
+		///     Therefore, it should be used wisely.
+		/// </summary>
+		protected ReplaySubject<MessageContainer<object>> LoadMessageChannel(string channelName, string eventName,
+			bool autoCreate = false)
+		{
+			// Channel hasn't been created before.
+			if (_channelManager.TryGetValue(new MessageChannel(channelName, eventName), out var channelMessageEmitter))
+				return channelMessageEmitter;
+
+			// Whether channel should be created automatically.
+			if (!autoCreate)
+				return null;
+
+			// Create the channel message emitter.
+			channelMessageEmitter = new ReplaySubject<MessageContainer<object>>(1);
+			if (!_channelManager.TryAdd(new MessageChannel(channelName, eventName), channelMessageEmitter))
+				throw new Exception($"Cannot add channel {channelName} and event name {eventName}");
+
+			// Raise an event about message channel creation if it has been newly added.
+			if (!_channelInitializationManager.TryGetValue(new MessageChannel(channelName, eventName),
+				out var channelInitializationEventEmitter))
+			{
+				channelInitializationEventEmitter = new ReplaySubject<AddedChannelEvent>(1);
+				_channelInitializationManager.TryAdd(new MessageChannel(channelName, eventName),
+					channelInitializationEventEmitter);
+			}
+
+			channelInitializationEventEmitter.OnNext(new AddedChannelEvent(channelName, eventName));
+			return channelMessageEmitter;
+		}
+
+		#endregion
+	}
 }

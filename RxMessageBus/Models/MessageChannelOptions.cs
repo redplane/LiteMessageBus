@@ -4,15 +4,18 @@
     {
         #region Properties
 
-        public double MessageLifetimeInSeconds { get; }
+        /// <summary>
+        /// Life time which message is valid (in seconds)
+        /// </summary>
+        public double? LifeTime { get; }
 
         #endregion
 
         #region Constructor
 
-        public MessageChannelOptions(double messageLifetimeInSeconds)
+        public MessageChannelOptions(double lifeTime)
         {
-            MessageLifetimeInSeconds = messageLifetimeInSeconds;
+            LifeTime = lifeTime;
         }
 
         #endregion

@@ -1,4 +1,4 @@
-﻿namespace LiteMessageBusDemo.Constants
+﻿namespace RxMessageBus.Demo.Constants
 {
     public class MessageChannelConstants
     {

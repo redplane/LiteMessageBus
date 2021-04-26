@@ -1,8 +1,8 @@
 ﻿using System;
 using LiteMessageBus.Services.Implementations;
-using LiteMessageBusDemo.Constants;
+using RxMessageBus.Demo.Constants;
 
-namespace LiteMessageBusDemo
+namespace RxMessageBus.Demo
 {
     class Program
     {
