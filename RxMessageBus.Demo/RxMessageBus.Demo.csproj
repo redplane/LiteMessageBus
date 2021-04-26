@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\LiteMessageBus\LiteMessageBus.csproj" />
+    <ProjectReference Include="..\RxMessageBus\RxMessageBus.csproj" />
   </ItemGroup>
 
 </Project>

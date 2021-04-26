@@ -9,3 +9,8 @@
 /LiteMessageBus/bin
 /LiteMessageBus.UnitTest/obj
 /LiteMessageBus.UnitTest/bin
+/.idea
+/RxMessageBus.Demo/obj
+/RxMessageBus.Demo/bin
+/RxMessageBus.UnitTest/obj
+/RxMessageBus.UnitTest/bin
