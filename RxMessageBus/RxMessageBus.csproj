@@ -15,6 +15,7 @@
     <PackageProjectUrl>https://github.com/redplane/LiteMessageBus</PackageProjectUrl>
     <RootNamespace>LiteMessageBus</RootNamespace>
     <AssemblyName>LiteMessageBus</AssemblyName>
+    <PackageVersion>1.0.0-Preview-3</PackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
