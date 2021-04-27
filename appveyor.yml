@@ -6,8 +6,7 @@ branches:
   # whitelist
   only:
     - master
-    - /feature\//
-    - /fix\//
+    - /(release|fix)\/.+/
     - preview
 
 # Including commits affecting specific files (GitHub only). More details here: /docs/appveyor-yml
